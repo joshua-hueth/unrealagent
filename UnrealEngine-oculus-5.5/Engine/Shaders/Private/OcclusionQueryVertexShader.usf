@@ -1,0 +1,74 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
+
+/*=============================================================================
+	OcclusionQueryVertexShader.usf: Vertex shader for drawing occlusion queries.
+=============================================================================*/
+
+#include "Common.ush"
+
+// BEGIN META SECTION - GPU Occlusion Query Optimizations
+#define USE_MULTI_VIEW (INSTANCED_STEREO || MOBILE_MULTI_VIEW)
+
+#if USE_MULTI_VIEW
+float4 StencilPosAndScale[2];
+#else
+float4 StencilPosAndScale;
+#endif
+
+void Main(
+	in float4 InPosition : ATTRIBUTE0,
+	out float4 OutPosition : SV_POSITION
+// BEGIN META SECTION - Pass MultiViewIndex as SV_ViewID on Vulkan
+#if INSTANCED_STEREO
+	, uint InstanceId : SV_InstanceID
+	
+// BEGIN META SECTION - GPU Occlusion Query Optimizations
+// INSTANCED_STEREO and MOBILE_MULTI_VIEW together should be mobile preview where MMV falls back to ISR due to
+// the platform/RHI not supporting native multiview, and is using ISR to render to a texture array
+#if MOBILE_MULTI_VIEW
+	, out nointerpolation uint LayerIndex : SV_RenderTargetArrayIndex
+#endif
+	
+// INSTANCED_STEREO and MULTI_VIEW together should be the PC renderer where ISR is rendering to a double wide
+// texture with two separate viewports
+#if MULTI_VIEW
+	, out nointerpolation uint ViewportIndex : SV_ViewPortArrayIndex
+#endif
+// END META SECTION - GPU Occlusion Query Optimizations
+
+#elif MOBILE_MULTI_VIEW
+	, in uint InViewId : SV_ViewID
+#endif
+#if USE_MULTI_VIEW_ID_INTERPOLANT
+// END META SECTION - Pass MultiViewIndex as SV_ViewID on Vulkan
+	, out uint OutViewId : VIEW_ID
+#endif
+	)
+{
+// BEGIN META SECTION - Pass MultiViewIndex as SV_ViewID on Vulkan
+#if INSTANCED_STEREO
+	uint InViewId = GetEyeIndex(InstanceId);
+// BEGIN META SECTION - GPU Occlusion Query Optimizations
+#if MOBILE_MULTI_VIEW
+	LayerIndex = InViewId;
+#endif
+#if MULTI_VIEW
+	ViewportIndex = InViewId;
+#endif
+#endif
+#if USE_MULTI_VIEW_ID_INTERPOLANT
+	OutViewId = InViewId;
+#endif
+// END META SECTION - Pass MultiViewIndex as SV_ViewID on Vulkan
+#if USE_MULTI_VIEW
+	ResolvedView = ResolveView(InViewId);
+	float4 PosAndScale = StencilPosAndScale[InViewId];
+#else
+	ResolvedView = ResolveView();
+	float4 PosAndScale = StencilPosAndScale;
+#endif
+
+	float3 TransformedPosition = InPosition.xyz * PosAndScale.w + PosAndScale.xyz;
+	OutPosition = mul(float4(TransformedPosition, 1), ResolvedView.TranslatedWorldToClip);
+}
+// END META SECTION - GPU Occlusion Query Optimizations

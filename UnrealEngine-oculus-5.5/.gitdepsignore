@@ -1,0 +1,8 @@
+# add files here that should be ignored by GitDependencies
+
+# Binaries modified in the Meta fork of Unreal
+/Engine/Source/ThirdParty/Oculus/LibOVRPlatform/LibOVRPlatform/lib/LibOVRPlatform32_1.lib
+/Engine/Source/ThirdParty/Oculus/LibOVRPlatform/LibOVRPlatform/lib/LibOVRPlatform64_1.lib
+/Engine/Source/ThirdParty/Oculus/LibOVRPlatform/LibOVRPlatform/lib/arm64-v8a/libovrplatformloader.so
+/Engine/Source/ThirdParty/Oculus/OculusOpenXRLoader/OculusOpenXRLoader/Lib/arm64-v8a/libopenxr_loader.so
+/Engine/Source/ThirdParty/Oculus/OculusOpenXRLoader/OculusOpenXRLoader/Lib/armeabi-v7a/libopenxr_loader.so
